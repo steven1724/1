@@ -74,6 +74,49 @@ export default function App() {
   }, [state.running, state.score, tick]);
 
   useEffect(() => {
+    let touchStart = null;
+
+    const onTouchStart = (e) => {
+      const t = e.touches[0];
+      touchStart = { x: t.clientX, y: t.clientY };
+    };
+
+    const onTouchEnd = (e) => {
+      if (!touchStart) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - touchStart.x;
+      const dy = t.clientY - touchStart.y;
+      touchStart = null;
+
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+
+      const opposite = {
+        UP: Direction.DOWN, DOWN: Direction.UP,
+        LEFT: Direction.RIGHT, RIGHT: Direction.LEFT,
+      };
+
+      let newDir;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        newDir = dx > 0 ? Direction.RIGHT : Direction.LEFT;
+      } else {
+        newDir = dy > 0 ? Direction.DOWN : Direction.UP;
+      }
+
+      setState(prev => {
+        if (opposite[newDir] === prev.dir) return prev;
+        return { ...prev, nextDir: newDir };
+      });
+    };
+
+    window.addEventListener('touchstart', onTouchStart);
+    window.addEventListener('touchend', onTouchEnd);
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, []);
+
+  useEffect(() => {
     const onKey = (e) => {
       const map = {
         ArrowUp: Direction.UP, w: Direction.UP, W: Direction.UP,
@@ -144,7 +187,7 @@ export default function App() {
           {state.dead ? '重新开始' : state.running ? '暂停' : '开始'}
         </button>
       </div>
-      <p className="hint">方向键 或 WASD 控制方向</p>
+      <p className="hint">方向键 / WASD 控制 · 手机滑动屏幕控制</p>
     </div>
   );
 }
